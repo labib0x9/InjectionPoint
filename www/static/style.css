@@ -272,21 +272,30 @@ body {
 }
 
 /* individual box colors */
+/* XSS */
 .box-xss::before { background: var(--accent2); }
 .box-xss .box-tag { background: rgba(255,79,110,0.12); color: var(--accent2); }
 .box-xss:hover { border-color: var(--accent2); box-shadow: 0 0 20px rgba(255,79,110,0.15); }
 
+/* SQL */
 .box-sql::before { background: var(--accent); }
 .box-sql .box-tag { background: rgba(0,255,224,0.1); color: var(--accent); }
 .box-sql:hover { border-color: var(--accent); box-shadow: 0 0 20px rgba(0,255,224,0.15); }
 
+/* SEG */
 .box-seg::before { background: #fb923c; }
 .box-seg .box-tag { background: rgba(251,146,60,0.12); color: #fb923c; }
 .box-seg:hover { border-color: #fb923c; box-shadow: 0 0 20px rgba(251,146,60,0.15); }
 
+/* LINUX */
 .box-linux::before { background: var(--accent3); }
 .box-linux .box-tag { background: rgba(167,139,250,0.12); color: var(--accent3); }
 .box-linux:hover { border-color: var(--accent3); box-shadow: 0 0 20px rgba(167,139,250,0.15); }
+
+/* C */
+.box-ccode::before { background: #facc15; }
+.box-ccode .box-tag { background: rgba(250,204,21,0.12); color: #facc15; }
+.box-ccode:hover { border-color: #facc15; box-shadow: 0 0 20px rgba(250,204,21,0.15); }
 
 /* scroll reveal */
 .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s, transform 0.6s; }

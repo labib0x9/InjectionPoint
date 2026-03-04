@@ -8,6 +8,28 @@ import (
 	"net/http"
 )
 
+type IO struct {
+	Input  string
+	Output string
+}
+
+type CProblem struct {
+	Id          int
+	Title       string
+	Description string
+	Examples    []IO
+	Hints       []string
+	Solution    string
+	StarterC    string
+}
+
+type PageData struct {
+	Problem  CProblem
+	Problems []CProblem // sidebar list
+	WSUrl    string     // e.g. "ws://localhost:8080/ws"
+	solved   map[int]bool
+}
+
 // status = 0 (inactive), 1 (active)
 type Lab struct {
 	Id          int
@@ -33,7 +55,8 @@ type TopicPage struct {
 	Labs     []Lab
 }
 
-var LINUX TopicPage
+var LINUX, CCODE TopicPage
+var CPLAYGORUND_PAGE PageData
 
 // var XssLabs []Lab
 // var SqliLabs []Lab
@@ -87,7 +110,20 @@ func init() {
 		ShortDescription: "Get comfortable — it's your primary weapon.",
 	}
 
-	AllTopics = append(AllTopics, []Topic{xss, sqli, segfault, linux}...)
+	ccode := Topic{
+		TopicUrl:         "/ccode",
+		BoxTopicReveal:   "box box-ccode reveal",
+		BoxTag:           "C Code",
+		Topic:            "C Programming",
+		LabCount:         1,
+		ShortDescription: "Learn how program works - Coding...",
+	}
+
+	// Dont comment / remove
+	_ = xss
+	_ = sqli
+	_ = segfault
+	AllTopics = append(AllTopics, []Topic{linux, ccode}...)
 
 	linuxLab1 := Lab{
 		Id:          1,
@@ -127,20 +163,75 @@ func init() {
 		// },
 	}
 
+	cLab1 := Lab{
+		Id:          1,
+		Title:       "Playground",
+		Badge:       "...",
+		Description: `A container sandbox to run c code`,
+		Hints: []string{
+			`No Hints..`,
+		},
+	}
+
 	LINUX = TopicPage{
 		Label:    "OS & Shell · Linux",
 		Name:     "Linux",
 		Category: "Fundamentals",
 		Labs:     []Lab{linuxLab1, linuxLab2, linuxLab3},
 	}
+
+	CCODE = TopicPage{
+		Label:    "Programming",
+		Name:     "C Programming",
+		Category: "",
+		Labs:     []Lab{cLab1},
+	}
+
+	cp_prob1 := CProblem{
+		Id:          1,
+		Title:       "Two Sum",
+		Description: "Given an array of integers <strong>nums</strong> and an integer <strong>target</strong>, return the <strong>indices</strong> of the two numbers such that they add up to target. Exactly one solution exists.",
+		Examples: []IO{
+			{Input: "nums=[2,7,11,15], target=9", Output: "[0,1]"},
+			{Input: "nums=[3,2,4], target=6", Output: "[1,2]"},
+		},
+		Hints: []string{
+			"brute force O(n²): check every pair. can you do better?",
+			"for each x, you need (target-x). store seen values in a hash map.",
+			"one pass: check if complement exists in map, else store current index.",
+		},
+		Solution: "hash map one-pass. for each num check if complement exists. O(n) time, O(n) space.",
+		StarterC: `#include <stdio.h>\n#include <stdlib.h>\n\nint main() {\n   return 0;\n}`,
+	}
+
+	_ = cp_prob1
+	CPLAYGORUND_PAGE = PageData{
+		Problem:  cp_prob1,
+		Problems: []CProblem{cp_prob1},
+		WSUrl:    "ws://localhost:8080/ws",
+		solved:   map[int]bool{},
+	}
+
 }
 
 var funcMap = template.FuncMap{
+	// {{add $i 1}}
 	"add": func(a, b int) int { return a + b },
+
+	// {{.Problem | toJSON}}
+	"toJSON": func(v any) (template.JS, error) {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return "", err
+		}
+		return template.JS(b), nil
+	},
 }
 
 var homeTmpl = template.Must(template.New("index.html").Funcs(funcMap).ParseFiles("templates/index.html"))
 var linuxTmpl = template.Must(template.New("linux.html").Funcs(funcMap).ParseFiles("templates/linux.html"))
+var cTmpl = template.Must(template.New("ccode.html").Funcs(funcMap).ParseFiles("templates/ccode.html"))
+var editorTmpl = template.Must(template.New("editor.html").Funcs(funcMap).ParseFiles("templates/editor.html"))
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -224,6 +315,61 @@ func linuxHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func codeHandler(w http.ResponseWriter, r *http.Request) {
+	// http.Redirect(w, r, "/upcoming", 302)
+	switch r.Method {
+	case http.MethodGet:
+		cTmpl.Execute(
+			w,
+			map[string]any{
+				"Label":    CCODE.Label,
+				"Name":     CCODE.Name,
+				"Category": CCODE.Category,
+				"Labs":     CCODE.Labs,
+			},
+		)
+	case http.MethodPost:
+		var labHndlr LabHandler
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&labHndlr); err != nil {
+			slog.Error("JSON Decoding failed")
+			http.Error(w, "give proper json", 400)
+			return
+		}
+		slog.Info("Lab Id", "lab_id", labHndlr.Id)
+
+		switch labHndlr.Flag {
+		case 1: // Start
+			encoder := json.NewEncoder(w)
+			encoder.Encode(
+				map[string]string{
+					"lab_url": "/playground",
+				},
+			)
+		case 2: // Reset
+		case 3: // Terminate
+		default:
+			http.Error(w, "Flag not allowed", 400)
+		}
+	default:
+		http.Error(w, "Method not allowed", 400)
+	}
+}
+
+func codePlayground(w http.ResponseWriter, r *http.Request) {
+	// http.ServeFile(w, r, "./www/tmp/ccode.html")
+	switch r.Method {
+	case http.MethodGet:
+		editorTmpl.Execute(
+			w,
+			CPLAYGORUND_PAGE,
+		)
+	case http.MethodPost:
+	default:
+		http.Error(w, "Method not allowed", 400)
+	}
+}
+
 func upcomingHandler(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprintln(w, "UPCOMING....")
 	http.ServeFile(w, r, "./www/upcoming.html")
@@ -241,6 +387,14 @@ func main() {
 	mux.HandleFunc("/segfault", segfaultHandler)
 	mux.HandleFunc("/linux", linuxHandler)
 	mux.HandleFunc("/upcoming", upcomingHandler)
+	mux.HandleFunc("/ccode", codeHandler)
+	mux.HandleFunc("/ccode/playground", codePlayground)
+
+	mux.HandleFunc("/login", userLogin)
+	mux.HandleFunc("/login-anon", anonLogin)
+	mux.HandleFunc("/login-admin", adminLogin)
+	mux.HandleFunc("/profile", profileHandle)
+	mux.HandleFunc("/logout", userLogout)
 
 	mux.Handle("/static/", http.StripPrefix("/static", sfs))
 	// mux.Handle("/favicon.ico", http.StripPrefix("/", fs))
