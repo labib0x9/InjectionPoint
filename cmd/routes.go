@@ -16,7 +16,12 @@ func initRoutes(mux *http.ServeMux, manager *middleware.Manager) {
 		),
 	)
 
-	// mux.Handle("GET /lab/${id}", http.HandlerFunc(handlers.GetLabByID))
+	mux.Handle(
+		"GET /lab/{id}",
+		manager.With(
+			http.HandlerFunc(handlers.GetLabByID),
+		),
+	)
 	mux.Handle(
 		"POST /lab/start",
 		manager.With(
