@@ -6,108 +6,19 @@ import (
 	"net/http"
 
 	"github.com/labib0x9/ProjectUnsafe/global_router"
-	"github.com/labib0x9/ProjectUnsafe/handlers"
-	"github.com/labib0x9/ProjectUnsafe/model"
+	"github.com/labib0x9/ProjectUnsafe/middleware"
 )
-
-func init() {
-	lab1 := model.Lab{
-		Id:          "lab-ssh-basics",
-		Title:       "SSH Basics",
-		Difficulty:  "easy",
-		Category:    "networking",
-		Description: "Learn to connect to remote machines, manage keys, and tunnel ports using SSH.",
-		LongDescription: `In this lab you will practice the fundamentals of SSH. You will: 
-- Connect to a remote host using password and key-based auth
-- Generate and manage SSH key pairs
-- Use SSH tunneling to forward local ports
-- Explore the ~/.ssh/config file
-
-The container runs a minimal Debian image with sshd configured and ready.`,
-		Hints: []string{
-			"Use ssh-keygen -t ed25519 to generate a modern key pair",
-			"Copy your public key with ssh-copy-id user@host",
-			"Check /etc/ssh/sshd_config for server settings",
-		},
-		Completions:   0,
-		EstimatedTime: "45 min",
-		Tags:          []string{"ssh", "networking", "linux"},
-	}
-
-	lab2 := model.Lab{
-		Id:          "lab-fd-hunt-01",
-		Title:       "FD Hunt",
-		Difficulty:  "easy",
-		Category:    "linux",
-		Description: "Learn to find opened fd by a process.",
-		LongDescription: `In this lab you will practice the fundamentals of /proc folder. You will: 
-- Find opened file by monitoring /proc folder
-- No need to use lsof tool
-- Submit how many files are opened by the process.
-
-The container runs a minimal Debian image with sshd configured and ready.`,
-		Hints: []string{
-			"You will need pid of that process",
-			"monitor /proc/<pid> directory",
-		},
-		Completions:   0,
-		EstimatedTime: "45 min",
-		Tags:          []string{"ssh", "process", "linux"},
-	}
-
-	lab3 := model.Lab{
-		Id:          "lab-process-01",
-		Title:       "Process Status",
-		Difficulty:  "easy",
-		Category:    "linux",
-		Description: "Learn to Monitor process status.",
-		LongDescription: `In this lab you will practice theof /proc folder. You will: 
-- Find opened file by monitoring /proc folder
-- No need to use lsof tool
-- You will submit how much ram, cpu usage by the process
-
-The container runs a minimal Debian image with sshd configured and ready.`,
-		Hints: []string{
-			"You will need pid of that process",
-			"monitor /proc/<pid> directory",
-		},
-		Completions:   0,
-		EstimatedTime: "45 min",
-		Tags:          []string{"ssh", "process", "linux"},
-	}
-
-	model.LabList = append(model.LabList, lab1, lab2, lab3)
-}
 
 func Server() {
 
+	manager := middleware.NewManager()
+	manager.Use(
+		middleware.Logger,
+	)
+
 	mux := http.NewServeMux()
 
-	// Lab APIs
-	mux.Handle("GET /labs", http.HandlerFunc(handlers.GetAllLabs))
-	// mux.Handle("GET /lab/${id}", http.HandlerFunc())
-	// mux.Handle("POST /lab/start", http.HandlerFunc())
-	// mux.Handle("POST /lab/reset'", http.HandlerFunc())
-	// mux.Handle("POST /lab/terminate'", http.HandlerFunc())
-	// mux.Handle("GET /lab/hints?labId=${labId}", http.HandlerFunc())
-
-	// Auth APIs
-	// mux.Handle("POST /auth/signup", http.HandlerFunc())
-	// mux.Handle("POST /auth/login", http.HandlerFunc())
-	// mux.Handle("POST /auth/reset-password", http.HandlerFunc())
-	mux.Handle("POST /auth/anonymous", http.HandlerFunc(handlers.AnonLogin))
-	// mux.Handle("POST /auth/logout", http.HandlerFunc())
-
-	// Playground APIs
-	// mux.Handle("GET /problems", http.HandlerFunc())
-	// mux.Handle("GET /problem/${id}", http.HandlerFunc())
-	// mux.Handle("POST /code/run-custom", http.HandlerFunc())
-	// mux.Handle("POST /code/run", http.HandlerFunc())
-
-	// Admin APIs
-	// mux.Handle("GET /admin/users", http.HandlerFunc())
-	// mux.Handle("GET /admin/containers", http.HandlerFunc())
-	// mux.Handle("POST /admin/terminate", http.HandlerFunc())
+	initRoutes(mux, manager)
 
 	globalRouter := global_router.NewGlobalRouter(mux)
 

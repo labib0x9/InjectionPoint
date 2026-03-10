@@ -2,20 +2,38 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
+	"time"
 
 	"github.com/labib0x9/ProjectUnsafe/model"
+	"github.com/labib0x9/ProjectUnsafe/utils"
 )
 
 func AnonLogin(w http.ResponseWriter, r *http.Request) {
-	Id := strconv.FormatUint(model.Count+1, 10)
-	model.Count += 1
 	newUser := model.User{
 		Role:       "anon",
-		Username:   "Anon" + Id,
+		Username:   "Guest-",
 		Password:   "",
 		SolvedLabs: []string{},
+		UUID:       utils.Generate_Random_ID(),
+		CreatedAt:  time.Now(),
+		ExpiredAt:  time.Now().Add(30 * time.Minute),
 	}
+	newUser.Username += newUser.UUID.String()
 
 	model.UserList = append(model.UserList, newUser)
+
+	data := map[string]any{
+		"user": map[string]any{
+			"id":          newUser.UUID,
+			"username":    newUser.Username,
+			"isAdmin":     false,
+			"isAnonymous": true,
+		},
+		"token": "token-blabla",
+	}
+
+	utils.SendJson(w, data)
+}
+
+func Logout(w http.ResponseWriter, r *http.Request) {
 }
